@@ -3,6 +3,7 @@ import Review from "../Models/userReviewSchema.js";
 import Reservation from "../Models/reservationSchema.js";
 
 export const createReview = async (req, res) => {
+    console.log("🔥 VERSION 2 WORKING");
   try {
    console.log("Full Header:", req.headers["content-type"]);
   console.log("Raw Body:", req.body);
