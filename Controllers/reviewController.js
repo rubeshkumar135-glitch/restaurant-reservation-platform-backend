@@ -63,31 +63,43 @@ export const getRestaurantReviews =  async (req, res) => {
     }
 };
 
-// Edit Review
-export const updateReview = async (req,res) => {
-    try {
-        const review = await Review.findById(req.params.id);
+export const updateReview = async (req, res) => {
+  try {
+    console.log("BODY:", req.body);
+    console.log("FILE:", req.file);
 
-        if (!review) {
-            return res.status(404).json({message: "Review not found"});
-        }
+    const review = await Review.findById(req.params.id);
 
-        if (review.user.toString() !== req.user.id) {
-            return res.status(403).json({message: "Unauthorized"});
-        }
-
-        const { rating, comment, photos } = req.body;
-
-        review.rating = rating || review.rating;
-        review.comment = comment || review.comment;
-        review.photos = photos || review.photos;
-
-        await review.save();
-
-        res.status(201).json({message: "Review updated successfully",review});
-    } catch (error) {
-        res.status(500).json({error: error.message});
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
     }
+
+    if (review.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    const rating = req.body?.rating;
+    const comment = req.body?.comment;
+
+    if (rating) review.rating = rating;
+    if (comment) review.comment = comment;
+
+    // ✅ handle image update
+    if (req.file) {
+      review.photos = [req.file.path]; // replace old photo
+    }
+
+    await review.save();
+
+    res.status(200).json({
+      message: "Review updated successfully",
+      review
+    });
+
+  } catch (error) {
+    console.error("UPDATE ERROR:", error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 // Delete Review

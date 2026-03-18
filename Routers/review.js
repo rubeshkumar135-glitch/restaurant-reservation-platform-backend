@@ -17,7 +17,14 @@ router.post(
 
 router.get("/restaurant/:restaurantId", getRestaurantReviews);
 
-router.put("/update/:id", authMiddleware, isUser, updateReview);
+// router.put("/update/:id", authMiddleware, isUser, updateReview);
+router.put(
+  "/update/:id",
+  authMiddleware,
+  isUser,
+  upload.single("photos"), // ✅ IMPORTANT
+  updateReview
+);
 
 router.delete("/delete/:id", authMiddleware, isUser, deleteReview);
 
