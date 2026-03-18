@@ -1,4 +1,7 @@
-// routes/userRoutes.js
+import express from "express";
+import { authMiddleware } from "../Middlewares/authMiddleware.js";
+const router = express.Router();
+
 
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
@@ -8,3 +11,5 @@ router.get("/profile", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 });
+
+export default router;
