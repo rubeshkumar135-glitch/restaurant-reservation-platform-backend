@@ -1,41 +1,55 @@
+import mongoose from "mongoose";
 import Review from "../Models/userReviewSchema.js";
 import Reservation from "../Models/reservationSchema.js";
 
-// Create Review
-import mongoose from "mongoose";
-
 export const createReview = async (req, res) => {
-    try {
-        const { restaurantId, rating, comment, photos } = req.body;
+  try {
+   console.log("Full Header:", req.headers["content-type"]);
+  console.log("Raw Body:", req.body);
 
-        const reservation = await Reservation.findOne({
-            user: new mongoose.Types.ObjectId(req.user.id),
-            restaurant: new mongoose.Types.ObjectId(restaurantId),
-            status: "booked"
-        });
+    // ✅ SAFE extraction (NO destructuring)
+    const restaurantId = req.body && req.body.restaurantId;
+    const rating = req.body && req.body.rating;
+    const comment = req.body && req.body.comment;
 
-        if (!reservation) {
-            return res.status(400).json({
-                message: "You can only review restaurant you visited"
-            });
-        }
-
-        const review = await Review.create({
-            user: req.user.id,
-            restaurant: restaurantId,
-            rating,
-            comment,
-            photos
-        });
-
-        res.status(201).json({
-            message: "Review added successfully",
-            review
-        });
-
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+    if (!restaurantId || !rating || !comment) {
+      return res.status(400).json({
+        message: "All fields are required"
+      });
     }
+
+    // ✅ Handle images
+    const photoUrls = req.file ? [req.file.path] : [];
+
+    // (Optional) disable for testing
+    const reservation = await Reservation.findOne({
+      user: new mongoose.Types.ObjectId(req.user.id),
+      restaurant: new mongoose.Types.ObjectId(restaurantId)
+    });
+
+    if (!reservation) {
+      return res.status(400).json({
+        message: "You must reserve before reviewing"
+      });
+    }
+
+    const review = await Review.create({
+      user: req.user.id,
+      restaurant: restaurantId,
+      rating,
+      comment,
+      photos: photoUrls
+    });
+
+    res.status(201).json({
+      message: "Review added successfully",
+      review
+    });
+
+  } catch (error) {
+    console.error("SERVER ERROR:", error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 // Get Restaurant Reviews

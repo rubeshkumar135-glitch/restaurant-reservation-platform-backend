@@ -74,14 +74,40 @@ export const getOwnerRestaurants = async (req, res) => {
 
 
 
-// ✅ Get ALL Restaurants (User Dashboard)
+// // ✅ Get ALL Restaurants (User Dashboard)
+// export const getAllRestaurants = async (req, res) => {
+//   try {
+
+//     const restaurants = await Restaurant.find()
+//       .populate("owner", "name");
+
+//     res.status(200).json(restaurants);
+
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// };
+
 export const getAllRestaurants = async (req, res) => {
   try {
+    const { search } = req.query;
 
-    const restaurants = await Restaurant.find()
+    let query = {};
+
+    if (search) {
+      query = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { "location.city": { $regex: search, $options: "i" } },
+          { cuisineTypes: { $regex: search, $options: "i" } }
+        ]
+      };
+    }
+
+    const restaurants = await Restaurant.find(query)
       .populate("owner", "name");
 
-    res.status(200).json(restaurants);
+    res.json(restaurants);
 
   } catch (error) {
     res.status(500).json({ error: error.message });

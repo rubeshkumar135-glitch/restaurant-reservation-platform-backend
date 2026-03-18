@@ -30,8 +30,8 @@ export const createCheckOutSession = async (req, res) => {
 
       mode: "payment",
 
-      success_url: "http://localhost:5173/success",
-      cancel_url: "http://localhost:5173/cancel"
+      success_url: "https://restaurant-reservation-platform-fro-seven.vercel.app/success",
+      cancel_url: "https://restaurant-reservation-platform-fro-seven.vercel.app/cancel"
     });
 
     res.json({
