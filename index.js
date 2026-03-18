@@ -10,6 +10,7 @@ import reservations from "./Routers/reservation.js";
 import admin from "./Routers/admin.js";
 import search from "./Routers/search.js"
 import payment from "./Routers/payment.js"
+import users from "./Routers/userRotues.js"
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use("/api/reviews", reviews );
 app.use("/api/admin", admin );
 app.use("/api/search", search);
 app.use("/api/payment", payment);
+app.use("/api/users", users);
 
 const PORT = process.env.PORT || 5000;
 
