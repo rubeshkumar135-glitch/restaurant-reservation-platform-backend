@@ -1,5 +1,3 @@
-
-
 import Stripe from "stripe";
 import dotenv from "dotenv";
 
@@ -9,7 +7,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const createCheckOutSession = async (req, res) => {
   try {
-
     const { reservationId, price } = req.body;
 
     const session = await stripe.checkout.sessions.create({
@@ -20,25 +17,26 @@ export const createCheckOutSession = async (req, res) => {
           price_data: {
             currency: "usd",
             product_data: {
-              name: "Restaurant Reservation"
+              name: "Restaurant Reservation",
             },
-            unit_amount: price * 100
+            unit_amount: price * 100,
           },
-          quantity: 1
-        }
+          quantity: 1,
+        },
       ],
 
       mode: "payment",
 
-      success_url: "https://restaurant-reservation-platform-fro-seven.vercel.app/success",
-      cancel_url: "https://restaurant-reservation-platform-fro-seven.vercel.app/cancel"
+      success_url:
+        "https://restaurant-reservation-platform-fro-seven.vercel.app/success",
+      cancel_url:
+        "https://restaurant-reservation-platform-fro-seven.vercel.app/cancel",
     });
 
     res.json({
       sessionId: session.id,
-      url: session.url
+      url: session.url,
     });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

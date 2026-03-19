@@ -19,7 +19,6 @@ router.put("/update-profile",
    authMiddleware,
     upload.single("profileImage"),
     async (req, res) => {
-      console.log("FILE:", req.file);
   try {
     const userId = req.user.id; // from auth middleware
 
@@ -38,7 +37,6 @@ router.put("/update-profile",
     if (req.file) {
   user.profileImage = req.file.path;
 }
-
     await user.save();
 
     res.json({

@@ -59,7 +59,7 @@ export const getOwnerRestaurants = async (req, res) => {
   }
 };
 
-// Get All Restaurants Restaurant
+// Get All Restaurants Restaurant for Search
 export const getAllRestaurants = async (req, res) => {
   try {
     const { search } = req.query;
@@ -67,54 +67,57 @@ export const getAllRestaurants = async (req, res) => {
     let query = {};
 
     if (search) {
-      const lower = search.toLowerCase();
+      const lower = search.toLowerCase().trim();
 
       const numberMatch = lower.match(/\d+/);
       const numberValue = numberMatch ? Number(numberMatch[0]) : null;
 
-      let andConditions = [];
-      let orConditions = [];
+      let conditions = [];
 
-      orConditions.push(
-        { name: { $regex: lower, $options: "i" } },
-        { "location.city": { $regex: lower, $options: "i" } },
-        { cuisineTypes: { $regex: lower, $options: "i" } },
-      );
+      conditions.push({
+        name: { $regex: lower, $options: "i" },
+      });
+
+      conditions.push({
+        "location.city": { $regex: lower, $options: "i" },
+      });
+
+      conditions.push({
+        cuisineTypes: { $regex: lower, $options: "i" },
+      });
 
       if (numberValue && numberValue <= 5) {
-        andConditions.push({ averageRating: { $gte: numberValue } });
+        conditions.push({
+          averageRating: { $gte: numberValue },
+        });
       }
 
+      // 🔢 REVIEWS
       if (numberValue && numberValue > 5) {
-        andConditions.push({ totalReviews: { $gte: numberValue } });
+        conditions.push({
+          totalReviews: { $gte: numberValue },
+        });
       }
 
-      if (
-        lower.includes("low") ||
-        lower.includes("cheap") ||
-        lower.includes("budget")
-      ) {
-        andConditions.push({ priceRange: "low" });
+      if (lower.includes("low") || lower.includes("cheap")) {
+        conditions.push({
+          priceRange: { $regex: /low/i },
+        });
       }
 
       if (lower.includes("medium") || lower.includes("mid")) {
-        andConditions.push({ priceRange: "medium" });
+        conditions.push({
+          priceRange: { $regex: /medium/i },
+        });
       }
 
-      if (
-        lower.includes("high") ||
-        lower.includes("expensive") ||
-        lower.includes("costly")
-      ) {
-        andConditions.push({ priceRange: "high" });
+      if (lower.includes("high") || lower.includes("expensive")) {
+        conditions.push({
+          priceRange: { $regex: /high/i },
+        });
       }
 
-      query = {
-        $and: [
-          ...(orConditions.length ? [{ $or: orConditions }] : []),
-          ...andConditions,
-        ],
-      };
+      query = { $or: conditions };
     }
 
     const restaurants = await Restaurant.find(query);
@@ -125,7 +128,7 @@ export const getAllRestaurants = async (req, res) => {
   }
 };
 
-// ✅ Search Restaurants
+//  Search Restaurants
 export const searchRestaurants = async (req, res) => {
   try {
     const { query } = req.query;

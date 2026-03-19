@@ -3,11 +3,7 @@ import Review from "../Models/userReviewSchema.js";
 import Reservation from "../Models/reservationSchema.js";
 import Restaurant from "../Models/restaurantSchema.js";
 
-
-
 export const createReview = async (req, res) => {
-  console.log("🔥 VERSION 3 WORKING");
-
   try {
     console.log("Full Header:", req.headers["content-type"]);
     console.log("Raw Body:", req.body);
@@ -18,57 +14,51 @@ export const createReview = async (req, res) => {
 
     if (!restaurantId || !rating || !comment) {
       return res.status(400).json({
-        message: "All fields are required"
+        message: "All fields are required",
       });
     }
 
-    // ✅ Handle images
     const photoUrls = req.file ? [req.file.path] : [];
 
-    // ✅ Check reservation
     const reservation = await Reservation.findOne({
       user: new mongoose.Types.ObjectId(req.user.id),
-      restaurant: new mongoose.Types.ObjectId(restaurantId)
+      restaurant: new mongoose.Types.ObjectId(restaurantId),
     });
 
     if (!reservation) {
       return res.status(400).json({
-        message: "You must reserve before reviewing"
+        message: "You must reserve before reviewing",
       });
     }
 
-    // ✅ Create review
     const review = await Review.create({
       user: req.user.id,
       restaurant: restaurantId,
       rating,
       comment,
-      photos: photoUrls
+      photos: photoUrls,
     });
 
-    // 🔥 IMPORTANT: Update average rating
+    await updateRestaurantRating(restaurantId);
+
     const reviews = await Review.find({ restaurant: restaurantId });
 
     const total = reviews.length;
 
     const avg =
-      total === 0
-        ? 0
-        : reviews.reduce((sum, r) => sum + r.rating, 0) / total;
+      total === 0 ? 0 : reviews.reduce((sum, r) => sum + r.rating, 0) / total;
 
     await Restaurant.findByIdAndUpdate(restaurantId, {
       averageRating: Number(avg.toFixed(1)),
-      totalReviews: total
+      totalReviews: total,
     });
 
-    // ✅ Final response
     res.status(201).json({
       message: "Review added successfully",
       review,
       averageRating: Number(avg.toFixed(1)),
-      totalReviews: total
+      totalReviews: total,
     });
-
   } catch (error) {
     console.error("SERVER ERROR:", error);
     res.status(500).json({ error: error.message });
@@ -79,13 +69,12 @@ export const createReview = async (req, res) => {
 export const getRestaurantReviews = async (req, res) => {
   try {
     const reviews = await Review.find({
-      restaurant: req.params.restaurantId
+      restaurant: req.params.restaurantId,
     })
-      .populate("user", "name")          // 👤 user name
-      .populate("restaurant", "owner");  // 🔥 owner id
+      .populate("user", "name")
+      .populate("restaurant", "owner");
 
     res.status(200).json(reviews);
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -93,9 +82,6 @@ export const getRestaurantReviews = async (req, res) => {
 
 export const updateReview = async (req, res) => {
   try {
-    console.log("BODY:", req.body);
-    console.log("FILE:", req.file);
-
     const review = await Review.findById(req.params.id);
 
     if (!review) {
@@ -109,12 +95,11 @@ export const updateReview = async (req, res) => {
     const rating = req.body?.rating;
     const comment = req.body?.comment;
 
-    if (rating) review.rating = rating;
+    if (rating) review.rating = Number(rating);
     if (comment) review.comment = comment;
 
-    // ✅ handle image update
     if (req.file) {
-      review.photos = [req.file.path]; // replace old photo
+      review.photos = [req.file.path];
     }
 
     await review.save();
@@ -123,54 +108,52 @@ export const updateReview = async (req, res) => {
 
     res.status(200).json({
       message: "Review updated successfully",
-      review
+      review,
     });
-
   } catch (error) {
     console.error("UPDATE ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-
-
-    const updateRestaurantRating = async (restaurantId) => {
+const updateRestaurantRating = async (restaurantId) => {
   const reviews = await Review.find({ restaurant: restaurantId });
 
   const total = reviews.length;
 
   const avg =
-    total === 0
-      ? 0
-      : reviews.reduce((sum, r) => sum + r.rating, 0) / total;
+    total === 0 ? 0 : reviews.reduce((sum, r) => sum + r.rating, 0) / total;
 
   await Restaurant.findByIdAndUpdate(restaurantId, {
     averageRating: Number(avg.toFixed(1)),
-    totalReviews: total
+    totalReviews: total,
   });
 };
 
 // Delete Review
 export const deleteReview = async (req, res) => {
-    try {
-        const review = await Review.findById(req.params.id);
+  try {
+    const review = await Review.findById(req.params.id);
 
-        if (!review) {
-            return res.status(404).josn({message: "Unauthorized"});
-        }
-
-        await review.deleteOne();
-
-        await updateRestaurantRating(restaurantId);
-
-        res.status(201).json({message: "Review deleted successfully"});
-    } catch (error) {
-        res.status(500).json({error: error.message});
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
     }
+
+    const restaurantId = review.restaurant;
+
+    await review.deleteOne();
+
+    await updateRestaurantRating(restaurantId);
+
+    res.status(200).json({
+      message: "Review deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
+};
 
 // Owner respond to review
-
 
 export const ownerResponse = async (req, res) => {
   try {
@@ -181,32 +164,30 @@ export const ownerResponse = async (req, res) => {
 
     if (!review) {
       return res.status(404).json({
-        message: "Review not found"
+        message: "Review not found",
       });
     }
 
-    // 🔥 Check owner
     if (review.restaurant.owner.toString() !== req.user.id) {
       return res.status(403).json({
-        message: "Only owner can reply"
+        message: "Only owner can reply",
       });
     }
 
     review.ownerResponse = {
       message,
-      respondedAt: new Date()
+      respondedAt: new Date(),
     };
 
     await review.save();
 
     res.status(200).json({
       message: "Reply added successfully",
-      review
+      review,
     });
-
   } catch (error) {
     res.status(500).json({
-      error: error.message
+      error: error.message,
     });
   }
 };
