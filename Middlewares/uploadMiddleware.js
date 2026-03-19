@@ -6,23 +6,20 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "profileImages",
-
-    // 🔥 FILE FORMAT CONTROL
-    format: async (req, file) => {
-      const ext = file.mimetype.split("/")[1]; // jpg/png/jpeg
-
-      if (!["jpg", "jpeg", "png"].includes(ext)) {
-        throw new Error("Only JPG, JPEG, PNG allowed");
-      }
-
-      return ext; // keep original format
-    },
-
-    public_id: (req, file) =>
-      Date.now() + "-" + file.originalname,
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/jpg"];
+
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error("Only JPG, JPEG, PNG allowed"), false);
+    }
+
+    cb(null, true);
+  },
+});
 
 export default upload;
