@@ -22,12 +22,13 @@ router.put(
   "/update/:id",
   authMiddleware,
   isUser,
-  upload.single("photos"), // ✅ IMPORTANT
+  upload.single("photo"), // ✅ IMPORTANT
   updateReview
 );
 
+
 router.delete("/delete/:id", authMiddleware, isUser, deleteReview);
 
-router.put("/owner-response/:reviewId", authMiddleware, isOwner, ownerResponse);
+router.post("/owner-response/:reviewId", authMiddleware, isOwner, ownerResponse);
 
 export default router;
