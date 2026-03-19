@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
 const restaurantSchema = new mongoose.Schema({
-
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -46,12 +45,18 @@ const restaurantSchema = new mongoose.Schema({
     sunday: { open: String, close: String }
   },
 
-  rating: {
+  // ⭐ IMPORTANT CHANGE
+  averageRating: {
     type: Number,
     default: 0
   },
 
-    capacity: {
+  totalReviews: {
+    type: Number,
+    default: 0
+  },
+
+  capacity: {
     type: Number,
     required: true
   }

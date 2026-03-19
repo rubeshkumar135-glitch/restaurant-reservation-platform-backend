@@ -1,17 +1,19 @@
 import mongoose from "mongoose";
 import Review from "../Models/userReviewSchema.js";
 import Reservation from "../Models/reservationSchema.js";
+import Restaurant from "../Models/restaurantSchema.js";
+
 
 export const createReview = async (req, res) => {
-    console.log("🔥 VERSION 2 WORKING");
-  try {
-   console.log("Full Header:", req.headers["content-type"]);
-  console.log("Raw Body:", req.body);
+  console.log("🔥 VERSION 3 WORKING");
 
-    // ✅ SAFE extraction (NO destructuring)
-    const restaurantId = req.body && req.body.restaurantId;
-    const rating = req.body && req.body.rating;
-    const comment = req.body && req.body.comment;
+  try {
+    console.log("Full Header:", req.headers["content-type"]);
+    console.log("Raw Body:", req.body);
+
+    const restaurantId = req.body?.restaurantId;
+    const rating = Number(req.body?.rating); // ✅ ensure number
+    const comment = req.body?.comment;
 
     if (!restaurantId || !rating || !comment) {
       return res.status(400).json({
@@ -22,7 +24,7 @@ export const createReview = async (req, res) => {
     // ✅ Handle images
     const photoUrls = req.file ? [req.file.path] : [];
 
-    // (Optional) disable for testing
+    // ✅ Check reservation
     const reservation = await Reservation.findOne({
       user: new mongoose.Types.ObjectId(req.user.id),
       restaurant: new mongoose.Types.ObjectId(restaurantId)
@@ -34,6 +36,7 @@ export const createReview = async (req, res) => {
       });
     }
 
+    // ✅ Create review
     const review = await Review.create({
       user: req.user.id,
       restaurant: restaurantId,
@@ -42,9 +45,27 @@ export const createReview = async (req, res) => {
       photos: photoUrls
     });
 
+    // 🔥 IMPORTANT: Update average rating
+    const reviews = await Review.find({ restaurant: restaurantId });
+
+    const total = reviews.length;
+
+    const avg =
+      total === 0
+        ? 0
+        : reviews.reduce((sum, r) => sum + r.rating, 0) / total;
+
+    await Restaurant.findByIdAndUpdate(restaurantId, {
+      averageRating: Number(avg.toFixed(1)),
+      totalReviews: total
+    });
+
+    // ✅ Final response
     res.status(201).json({
       message: "Review added successfully",
-      review
+      review,
+      averageRating: Number(avg.toFixed(1)),
+      totalReviews: total
     });
 
   } catch (error) {
@@ -91,6 +112,8 @@ export const updateReview = async (req, res) => {
 
     await review.save();
 
+    await updateRestaurantRating(review.restaurant);
+
     res.status(200).json({
       message: "Review updated successfully",
       review
@@ -100,6 +123,24 @@ export const updateReview = async (req, res) => {
     console.error("UPDATE ERROR:", error);
     res.status(500).json({ error: error.message });
   }
+};
+
+
+
+    const updateRestaurantRating = async (restaurantId) => {
+  const reviews = await Review.find({ restaurant: restaurantId });
+
+  const total = reviews.length;
+
+  const avg =
+    total === 0
+      ? 0
+      : reviews.reduce((sum, r) => sum + r.rating, 0) / total;
+
+  await Restaurant.findByIdAndUpdate(restaurantId, {
+    averageRating: Number(avg.toFixed(1)),
+    totalReviews: total
+  });
 };
 
 // Delete Review
@@ -113,11 +154,13 @@ export const deleteReview = async (req, res) => {
 
         await review.deleteOne();
 
+        await updateRestaurantRating(restaurantId);
+
         res.status(201).json({message: "Review deleted successfully"});
     } catch (error) {
         res.status(500).json({error: error.message});
     }
-};
+  }
 
 // Owner respond to review
 export const ownerResponse = async (req, res) => {
