@@ -1,6 +1,7 @@
 import express from "express";
 import { authMiddleware } from "../Middlewares/authMiddleware.js";
 import User from "../Models/userSchema.js"
+import upload from "../Middlewares/uploadMiddleware.js";
 
 
 const router = express.Router();
@@ -16,7 +17,10 @@ router.get("/profile", authMiddleware, async (req, res) => {
   }
 });
 
-router.put("/update-profile", authMiddleware, async (req, res) => {
+router.put("/update-profile",
+   authMiddleware,
+    upload.single("profileImage"),
+    async (req, res) => {
   try {
     const userId = req.user.id; // from auth middleware
 
@@ -31,6 +35,10 @@ router.put("/update-profile", authMiddleware, async (req, res) => {
     // Update fields
     user.name = name || user.name;
     user.email = email || user.email;
+
+    if (req.file) {
+  user.profileImage = req.file.path;
+}
 
     await user.save();
 

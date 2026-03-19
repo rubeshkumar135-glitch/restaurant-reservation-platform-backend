@@ -50,13 +50,21 @@ export const createReservation = async (req, res) => {
 
 // Get My Reservations
 export const getUserReservations = async (req, res) => {
-    try {
-        const reservations =  await ReservationSchema.find({ user: req.user.id }).populate("restaurant", "name Location");
-        res.status(200).json(reservations);
-    } catch (error) {
-        res.status(500).json({error: error.message});
-    }
-}
+  try {
+    const reservations = await ReservationSchema.find({
+      user: req.user.id
+    })
+      .populate({
+        path: "restaurant",
+        model: "Restaurant"
+      });
+
+    res.status(200).json(reservations);
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 //Update Reservation 
 export const updateReservation = async (req, res) => {

@@ -75,20 +75,24 @@ export const getAllRestaurants = async (req, res) => {
       let andConditions = [];
       let orConditions = [];
 
+      // 🔍 TEXT SEARCH
       orConditions.push(
         { name: { $regex: lower, $options: "i" } },
         { "location.city": { $regex: lower, $options: "i" } },
-        { cuisineTypes: { $regex: lower, $options: "i" } },
+        { cuisineTypes: { $regex: lower, $options: "i" } }
       );
 
+      // ⭐ RATING FILTER
       if (numberValue && numberValue <= 5) {
         andConditions.push({ averageRating: { $gte: numberValue } });
       }
 
+      // 📝 REVIEW COUNT FILTER
       if (numberValue && numberValue > 5) {
         andConditions.push({ totalReviews: { $gte: numberValue } });
       }
 
+      // 💰 PRICE FILTER
       if (
         lower.includes("low") ||
         lower.includes("cheap") ||
@@ -117,9 +121,38 @@ export const getAllRestaurants = async (req, res) => {
       };
     }
 
-    const restaurants = await Restaurant.find(query);
+    // 🔥 FETCH RESTAURANTS + OWNER
+    const restaurants = await Restaurant.find(query)
+      .populate("owner", "name email phone")
+      .lean();
 
-    res.json(restaurants);
+    // 🔥 ADD REVIEWS + RATING
+    const finalData = await Promise.all(
+      restaurants.map(async (r) => {
+
+        const reviews = await Review.find({ restaurant: r._id })
+          .populate("user", "name")
+          .limit(2); // preview only
+
+        const totalReviews = await Review.countDocuments({
+          restaurant: r._id,
+        });
+
+        const avg =
+          reviews.reduce((acc, cur) => acc + cur.rating, 0) /
+          (reviews.length || 1);
+
+        return {
+          ...r,
+          reviews,
+          totalReviews,
+          averageRating: avg.toFixed(1),
+        };
+      })
+    );
+
+    res.json(finalData);
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
